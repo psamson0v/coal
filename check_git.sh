@@ -28,29 +28,30 @@ fi
 if [ "$1" = "push" ]; then
 
     branch=$(git rev-parse --abbrev-ref HEAD)
-    # If the branch is followed by "stack-abcd1234-X" then it's already a part of a stack
-    # increment the number X and create a new branch
+    # Find the base branch. Special logic is required if this is the second layer in the stack
+    # since we need to strip off the "stack-abcd1234-1" suffix
     case "$branch" in
-        *stack-????????-[0-9]*)
-            if gh pr create --fill -B $branch; then
-                # TODO: put the stack number in the body of the PR somewhere
-                num=$(printf '%s' "$branch" | sed 's/.*-stack-.\{8\}-//')
-                prefix=$(printf '%s' "$branch" | sed 's/-[0-9]*$//')
-                new_branch="${prefix}-$((num + 1))"
-                git checkout -b "$new_branch"
-            fi
-            ;;
-    # If the branch is not followed by "stack-abcd1234-X" then it's not a part of a stack yet. 
-    # the new branch should have a stack identifier
-        *)
-            if gh pr create --fill; then
-                # TODO: put the stack number in the body of the PR somewhere    
-                rand=$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 8)
-                new_branch="${branch}-stack-${rand}-1"
-                git checkout -b "$new_branch"
-            fi
-            ;;
+        *stack-????????-1*) base="${branch%????????????????}" ;;
+        *stack-????????-[1-9]*) base="$branch" ;;
     esac
+
+    # If the branch is already part of a stack, increment the number and create a new branch
+    if [ -n "$base" ]; then
+        if gh pr create --fill -B "$base"; then
+            # TODO: put the stack number in the body of the PR somewhere
+            num=$(printf '%s' "$branch" | sed 's/.*-stack-.\{8\}-//')
+            prefix=$(printf '%s' "$branch" | sed 's/-[0-9]*$//')
+            git checkout -b "${prefix}-$((num + 1))"
+        fi
+    # If the branch is not part of a stack yet, create a new branch with a stack identifier
+    else
+        if gh pr create --fill; then
+            # TODO: put the stack number in the body of the PR somewhere
+            rand=$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 8)
+            git checkout -b "${branch}-stack-${rand}-1"
+        fi
+    fi
 fi
 
-#this is a comment at the base of the stack
+#this is a comment at the base of the stack again
+#this is another comment that I put in 

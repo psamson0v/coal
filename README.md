@@ -12,15 +12,12 @@ Github command line tools (`gh`) installed and available on the path
 
 Create a new branch in your repository as usual.
 
-When you are ready to create a first level PR, use `coal push`. This will create a pull request with your current branch and create another branch on top of this branch for you to continue your work. You can use `coal push` at any time to put additional PRs on the stack for review. 
+When you are ready to create a first level PR, use `./coal.sh push`. This will create a pull request with your current branch and create another branch on top of this branch for you to continue your work. You can use `./coal.sh push` at any time to put additional PRs on the stack for review. 
 
-If changes are introduced as a part of a lower level pull request, use `coal sync` to rebase the higher branches on top of these changes.
+If changes are introduced as a part of a lower level pull request, use `./coal.sh sync` to rebase the higher branches on top of these changes.
 
-Once all the pull requests are approved, use `coal merge` to merge all changes in the stack and close all pull requests.
+Once all the pull requests are approved, use `./coal.sh merge` to merge all changes in the stack and close all pull requests.
 
-If something went wrong and you want to start again, use `coal rebuild` to close all pull requests associated with this stack and automatically generate new pull requests.
+If something went wrong and you want to start again, use `./coal.sh rebuild` to close all pull requests associated with this stack and automatically generate new pull requests.
 
-TODO:
-- `coal status` - show the status of the current stack
-- `coal status [id]` - show the status of a specific stack
-- `coal list` - show the status of all stacks
+To see the status of your whole stack in one place, use `./coal.sh status`.

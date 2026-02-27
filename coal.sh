@@ -164,15 +164,16 @@ elif [ "$1" = "rebuild" ]; then
 
     stack_branches=$(git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
         awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
+    rebuild_branches=$(printf '%s\n' $stack_branches | sed '$d')
 
     gh pr close "$base" 2>/dev/null
-    for b in $stack_branches; do
+    for b in $rebuild_branches; do
         gh pr close "$b" 2>/dev/null
     done
 
     gh pr create --fill --head "$base"
     prev="$base"
-    for b in $stack_branches; do
+    for b in $rebuild_branches; do
         gh pr create --fill --head "$b" -B "$prev"
         prev="$b"
     done

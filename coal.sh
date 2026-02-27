@@ -109,21 +109,25 @@ elif [ "$1" = "status" ]; then
     stack_branches=$(git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
         awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
 
-    for b in $stack_branches; do
-        decision=$(gh pr view "$b" --json reviewDecision,mergeable --jq '.reviewDecision + " " + .mergeable' 2>/dev/null)
-        review=$(printf '%s' "$decision" | awk '{print $1}')
-        mergeable=$(printf '%s' "$decision" | awk '{print $2}')
-        case "$review" in
-            APPROVED)          label="approved" ;;
-            CHANGES_REQUESTED) label="changes requested" ;;
-            REVIEW_REQUIRED)   label="waiting for approvals" ;;
-            *)                 label="no reviews yet" ;;
-        esac
-        if [ "$mergeable" = "CONFLICTING" ]; then
-            label="$label, merge conflict"
-        fi
-        printf '%s: %s\n' "$b" "$label"
-    done
+    {
+        printf '%s\t%s\t%s\n' "BRANCH" "STATUS" "URL"
+        for b in $stack_branches; do
+            decision=$(gh pr view "$b" --json reviewDecision,mergeable,url --jq '.reviewDecision + " " + .mergeable + " " + .url' 2>/dev/null)
+            review=$(printf '%s' "$decision" | awk '{print $1}')
+            mergeable=$(printf '%s' "$decision" | awk '{print $2}')
+            url=$(printf '%s' "$decision" | awk '{print $3}')
+            case "$review" in
+                APPROVED)          label="approved" ;;
+                CHANGES_REQUESTED) label="changes requested" ;;
+                REVIEW_REQUIRED)   label="waiting for approvals" ;;
+                *)                 label="no reviews yet" ;;
+            esac
+            if [ "$mergeable" = "CONFLICTING" ]; then
+                label="$label, merge conflict"
+            fi
+            printf '%s\t%s\t%s\n' "$b" "$label" "$url"
+        done
+    } | column -t -s $'\t'
 
 # Sync the stack, merge the topmost PR, then close the rest with a comment
 elif [ "$1" = "merge" ]; then

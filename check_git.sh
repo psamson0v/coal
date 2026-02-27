@@ -31,10 +31,15 @@ if [ "$1" = "push" ]; then
     # Find the base branch. Special logic is required if this is the second layer in the stack
     # since we need to strip off the "stack-abcd1234-1" suffix
     case "$branch" in
-        *stack-????????-1*) base="${branch%????????????????}" ;;
-        *stack-????????-[1-9]*) base="$branch" ;;
+        *stack-????????-1*) base="${branch%?????????????????}" ;;
+        *stack-????????-[1-9]*)
+            num=$(printf '%s' "$branch" | sed 's/.*-stack-.\{8\}-//')
+            prefix=$(printf '%s' "$branch" | sed 's/-[0-9]*$//')
+            base="${prefix}-$((num - 1))"
+            ;;
     esac
 
+    echo $base
     # If the branch is already part of a stack, increment the number and create a new branch
     if [ -n "$base" ]; then
         if gh pr create --fill -B "$base"; then
@@ -54,3 +59,6 @@ if [ "$1" = "push" ]; then
 fi
 
 # stack layer 1
+#stack layer 2? 3? I lost count
+#this time it will work for sure
+#fifth time is the charm

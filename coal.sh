@@ -37,6 +37,13 @@ sync_stack() {
     stack_branches=$(git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
         awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
 
+    for b in $stack_branches; do
+        if [ "$(gh pr view "$b" --json mergeable --jq '.mergeable' 2>/dev/null)" = "CONFLICTING" ]; then
+            echo "Merge conflict detected in $b. Resolve the conflict before syncing or merging."
+            exit 1
+        fi
+    done
+
     prev="$base"
     for b in $stack_branches; do
         git checkout "$b"

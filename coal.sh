@@ -37,6 +37,13 @@ sync_stack() {
     stack_branches=$(git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
         awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
 
+    for b in $stack_branches; do
+        if [ "$(gh pr view "$b" --json mergeable --jq '.mergeable' 2>/dev/null)" = "CONFLICTING" ]; then
+            echo "Merge conflict detected in $b. Resolve the conflict before syncing or merging."
+            exit 1
+        fi
+    done
+
     prev="$base"
     for b in $stack_branches; do
         git checkout "$b"
@@ -103,13 +110,18 @@ elif [ "$1" = "status" ]; then
         awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
 
     for b in $stack_branches; do
-        decision=$(gh pr view "$b" --json reviewDecision --jq '.reviewDecision' 2>/dev/null)
-        case "$decision" in
+        decision=$(gh pr view "$b" --json reviewDecision,mergeable --jq '.reviewDecision + " " + .mergeable' 2>/dev/null)
+        review=$(printf '%s' "$decision" | awk '{print $1}')
+        mergeable=$(printf '%s' "$decision" | awk '{print $2}')
+        case "$review" in
             APPROVED)          label="approved" ;;
             CHANGES_REQUESTED) label="changes requested" ;;
             REVIEW_REQUIRED)   label="waiting for approvals" ;;
             *)                 label="no reviews yet" ;;
         esac
+        if [ "$mergeable" = "CONFLICTING" ]; then
+            label="$label, merge conflict"
+        fi
         printf '%s: %s\n' "$b" "$label"
     done
 
@@ -134,6 +146,42 @@ elif [ "$1" = "merge" ]; then
             gh pr close "$b"
         fi
     done
+
+# Close all PRs in the stack and recreate them from the existing branches
+elif [ "$1" = "rebuild" ]; then
+    branch=$(git rev-parse --abbrev-ref HEAD)
+
+    case "$branch" in
+        *stack-????????-[0-9]*)
+            stack_id=$(printf '%s' "$branch" | sed 's/.*-stack-\(.\{8\}\)-.*/\1/')
+            base=$(printf '%s' "$branch" | sed 's/-stack-.\{8\}-[0-9]*//')
+            ;;
+        *)
+            echo "Current branch is not part of a stack."
+            exit 1
+            ;;
+    esac
+
+    stack_branches=$(git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
+        awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
+    rebuild_branches=$(printf '%s\n' $stack_branches | sed '$d')
+
+    gh pr close "$base" 2>/dev/null
+    for b in $rebuild_branches; do
+        gh pr close "$b" 2>/dev/null
+    done
+
+    gh pr create --fill --head "$base"
+    prev="$base"
+    for b in $rebuild_branches; do
+        gh pr create --fill --head "$b" -B "$prev"
+        prev="$b"
+    done
+
 fi
 
-#maybe a dummy comment
+# stack 1
+
+#stack 2
+
+#stack 3

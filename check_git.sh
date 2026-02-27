@@ -24,3 +24,22 @@ if ! gh auth status > /dev/null 2>&1; then
     gh auth login
 fi
 
+if [ "$1" = "push" ]; then
+    gh pr create --fill
+
+    branch=$(git rev-parse --abbrev-ref HEAD)
+    case "$branch" in
+        *stack-????????-[0-9]*)
+            num=$(printf '%s' "$branch" | sed 's/.*-stack-.\{8\}-//')
+            prefix=$(printf '%s' "$branch" | sed 's/-[0-9]*$//')
+            new_branch="${prefix}-$((num + 1))"
+            git checkout -b "$new_branch"
+            ;;
+        *)
+            rand=$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 8)
+            new_branch="${branch}-stack-${rand}-1"
+            git checkout -b "$new_branch"
+            ;;
+    esac
+fi
+

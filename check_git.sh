@@ -52,4 +52,34 @@ if [ "$1" = "push" ]; then
             git checkout -b "${branch}-stack-${rand}-1"
         fi
     fi
+
+
+# Rebase each branch in the stack on top of the branch before it
+elif [ "$1" = "sync" ]; then
+    branch=$(git rev-parse --abbrev-ref HEAD)
+
+    case "$branch" in
+        *stack-????????-[0-9]*)
+            stack_id=$(printf '%s' "$branch" | sed 's/.*-stack-\(.\{8\}\)-.*/\1/')
+            base=$(printf '%s' "$branch" | sed 's/-stack-.\{8\}-[0-9]*//')
+            ;;
+        *)
+            echo "Current branch is not part of a stack. Nothing to sync."
+            exit 1
+            ;;
+    esac
+
+    stack_branches=$(git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
+        awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
+
+    prev="$base"
+    for b in $stack_branches; do
+        git checkout "$b"
+        git rebase "$prev"
+        prev="$b"
+    done
+
+    git checkout "$branch"
 fi
+
+#this is a sneaky change that goes at the bottom of the stack!

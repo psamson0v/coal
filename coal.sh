@@ -85,6 +85,34 @@ if [ "$1" = "push" ]; then
 elif [ "$1" = "sync" ]; then
     sync_stack
 
+# List the review status of each pull request in the stack
+elif [ "$1" = "status" ]; then
+    branch=$(git rev-parse --abbrev-ref HEAD)
+
+    case "$branch" in
+        *stack-????????-[0-9]*)
+            stack_id=$(printf '%s' "$branch" | sed 's/.*-stack-\(.\{8\}\)-.*/\1/')
+            ;;
+        *)
+            echo "Current branch is not part of a stack."
+            exit 1
+            ;;
+    esac
+
+    stack_branches=$(git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
+        awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
+
+    for b in $stack_branches; do
+        decision=$(gh pr view "$b" --json reviewDecision --jq '.reviewDecision' 2>/dev/null)
+        case "$decision" in
+            APPROVED)          label="approved" ;;
+            CHANGES_REQUESTED) label="changes requested" ;;
+            REVIEW_REQUIRED)   label="waiting for approvals" ;;
+            *)                 label="no reviews yet" ;;
+        esac
+        printf '%s: %s\n' "$b" "$label"
+    done
+
 # Sync the stack, then merge the topmost branch into main
 elif [ "$1" = "merge" ]; then
     sync_stack

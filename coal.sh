@@ -116,7 +116,16 @@ elif [ "$1" = "status" ]; then
 # Sync the stack, merge the topmost PR, then close the rest with a comment
 elif [ "$1" = "merge" ]; then
     sync_stack
-    topmost=$(printf '%s\n' $stack_branches | tail -n 1)
+    topmost=""
+    for b in $stack_branches; do
+        if gh pr view "$b" > /dev/null 2>&1; then
+            topmost="$b"
+        fi
+    done
+    if [ -z "$topmost" ]; then
+        echo "No open pull requests found in the stack."
+        exit 1
+    fi
     gh pr edit "$topmost" --base main
     gh pr merge "$topmost" --merge
     for b in $stack_branches; do

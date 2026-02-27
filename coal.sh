@@ -127,3 +127,4 @@ elif [ "$1" = "merge" ]; then
     done
 fi
 
+#maybe a dummy comment

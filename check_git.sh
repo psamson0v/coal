@@ -62,7 +62,6 @@ if [ "$1" = "push" ]; then
             ;;
     esac
 
-    echo $base
     # If the branch is already part of a stack, increment the number and create a new branch
     if [ -n "$base" ]; then
         if gh pr create --fill -B "$base"; then

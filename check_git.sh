@@ -1,15 +1,11 @@
 #!/bin/sh
 
-if command -v git > /dev/null 2>&1; then
-    echo "git is installed ($(git --version))"
-else
+if ! command -v git > /dev/null 2>&1; then
     echo "git is not installed. Please install git command line tools"
     exit 1
 fi
 
-if command -v gh > /dev/null 2>&1; then
-    echo "gh is installed ($(gh --version | head -1))"
-else
+if ! command -v gh > /dev/null 2>&1; then
     echo "gh is not installed. Please install Github command line tools"
     exit 1
 fi

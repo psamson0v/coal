@@ -32,7 +32,11 @@ if [ "$1" = "push" ]; then
     # since we need to strip off the "stack-abcd1234-1" suffix
     case "$branch" in
         *stack-????????-1*) base="${branch%?????????????????}" ;;
-        *stack-????????-[1-9]*) base="$branch" ;;
+        *stack-????????-[1-9]*)
+            num=$(printf '%s' "$branch" | sed 's/.*-stack-.\{8\}-//')
+            prefix=$(printf '%s' "$branch" | sed 's/-[0-9]*$//')
+            base="${prefix}-$((num - 1))"
+            ;;
     esac
 
     echo $base

@@ -81,3 +81,5 @@ elif [ "$1" = "sync" ]; then
 
     git checkout "$branch"
 fi
+
+#this is a sneaky change that goes at the bottom of the stack!

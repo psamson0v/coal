@@ -113,12 +113,18 @@ elif [ "$1" = "status" ]; then
         printf '%s: %s\n' "$b" "$label"
     done
 
-# Sync the stack, then merge the topmost branch into main
+# Sync the stack, merge the topmost PR, then close the rest with a comment
 elif [ "$1" = "merge" ]; then
     sync_stack
     topmost=$(printf '%s\n' $stack_branches | tail -n 1)
     gh pr edit "$topmost" --base main
     gh pr merge "$topmost" --merge
+    for b in $stack_branches; do
+        if [ "$b" != "$topmost" ]; then
+            gh pr comment "$b" --body "merged as a part of a stack"
+            gh pr close "$b"
+        fi
+    done
 
 fi
 

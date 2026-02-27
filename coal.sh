@@ -125,6 +125,5 @@ elif [ "$1" = "merge" ]; then
             gh pr close "$b"
         fi
     done
-
 fi
 

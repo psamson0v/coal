@@ -20,6 +20,33 @@ if ! gh auth status > /dev/null 2>&1; then
     gh auth login
 fi
 
+sync_stack() {
+    branch=$(git rev-parse --abbrev-ref HEAD)
+
+    case "$branch" in
+        *stack-????????-[0-9]*)
+            stack_id=$(printf '%s' "$branch" | sed 's/.*-stack-\(.\{8\}\)-.*/\1/')
+            base=$(printf '%s' "$branch" | sed 's/-stack-.\{8\}-[0-9]*//')
+            ;;
+        *)
+            echo "Current branch is not part of a stack. Nothing to sync."
+            exit 1
+            ;;
+    esac
+
+    stack_branches=$(git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
+        awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
+
+    prev="$base"
+    for b in $stack_branches; do
+        git checkout "$b"
+        git rebase "$prev" || exit 1
+        prev="$b"
+    done
+
+    git checkout "$branch"
+}
+
 # Push your current changes to a new or existing stack
 if [ "$1" = "push" ]; then
 
@@ -56,29 +83,14 @@ if [ "$1" = "push" ]; then
 
 # Rebase each branch in the stack on top of the branch before it
 elif [ "$1" = "sync" ]; then
-    branch=$(git rev-parse --abbrev-ref HEAD)
+    sync_stack
 
-    case "$branch" in
-        *stack-????????-[0-9]*)
-            stack_id=$(printf '%s' "$branch" | sed 's/.*-stack-\(.\{8\}\)-.*/\1/')
-            base=$(printf '%s' "$branch" | sed 's/-stack-.\{8\}-[0-9]*//')
-            ;;
-        *)
-            echo "Current branch is not part of a stack. Nothing to sync."
-            exit 1
-            ;;
-    esac
+# Sync the stack, then merge the topmost branch into main
+elif [ "$1" = "merge" ]; then
+    sync_stack
+    topmost=$(printf '%s\n' $stack_branches | tail -n 1)
+    gh pr edit "$topmost" --base main
+    gh pr merge "$topmost" --merge
 
-    stack_branches=$(git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
-        awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
-
-    prev="$base"
-    for b in $stack_branches; do
-        git checkout "$b"
-        git rebase "$prev"
-        prev="$b"
-    done
-
-    git checkout "$branch"
 fi
 

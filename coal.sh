@@ -103,13 +103,18 @@ elif [ "$1" = "status" ]; then
         awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
 
     for b in $stack_branches; do
-        decision=$(gh pr view "$b" --json reviewDecision --jq '.reviewDecision' 2>/dev/null)
-        case "$decision" in
+        decision=$(gh pr view "$b" --json reviewDecision,mergeable --jq '.reviewDecision + " " + .mergeable' 2>/dev/null)
+        review=$(printf '%s' "$decision" | awk '{print $1}')
+        mergeable=$(printf '%s' "$decision" | awk '{print $2}')
+        case "$review" in
             APPROVED)          label="approved" ;;
             CHANGES_REQUESTED) label="changes requested" ;;
             REVIEW_REQUIRED)   label="waiting for approvals" ;;
             *)                 label="no reviews yet" ;;
         esac
+        if [ "$mergeable" = "CONFLICTING" ]; then
+            label="$label, merge conflict"
+        fi
         printf '%s: %s\n' "$b" "$label"
     done
 

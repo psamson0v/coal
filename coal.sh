@@ -124,10 +124,10 @@ elif [ "$1" = "status" ]; then
     {
         printf '%s\t%s\t%s\n' "BRANCH" "STATUS" "URL"
         for b in $stack_branches; do
-            decision=$(gh pr view "$b" --json reviewDecision,mergeable,url --jq '.reviewDecision + " " + .mergeable + " " + .url' 2>/dev/null)
-            review=$(printf '%s' "$decision" | awk '{print $1}')
-            mergeable=$(printf '%s' "$decision" | awk '{print $2}')
-            url=$(printf '%s' "$decision" | awk '{print $3}')
+            decision=$(gh pr view "$b" --json reviewDecision,mergeable,url --jq '[.reviewDecision // "", .mergeable // "", .url // ""] | join("\t")' 2>/dev/null)
+            review=$(printf '%s' "$decision" | cut -f1)
+            mergeable=$(printf '%s' "$decision" | cut -f2)
+            url=$(printf '%s' "$decision" | cut -f3)
             case "$review" in
                 APPROVED)          label="approved" ;;
                 CHANGES_REQUESTED) label="changes requested" ;;

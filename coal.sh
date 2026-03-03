@@ -197,6 +197,12 @@ elif [ "$1" = "rebuild" ]; then
 elif [ "$1" = "help" ]; then
     print_help
 
-
+else
+    if [ -n "$1" ]; then
+        echo "Unknown command: $1"
+        echo ""
+    fi
+    print_help
+    exit 1
 
 fi

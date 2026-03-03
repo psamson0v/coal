@@ -54,6 +54,18 @@ sync_stack() {
     git checkout "$branch"
 }
 
+print_help() {
+    echo "Usage: coal <command>"
+    echo ""
+    echo "Commands:"
+    echo "  push     Create a PR for the current branch, push it onto the stack, and create a new branch"
+    echo "  sync     Rebase each branch in the stack on top of the branch before it"
+    echo "  status   List the review status of each pull request in the stack"
+    echo "  merge    Sync the stack, merge the topmost PR, and close the rest"
+    echo "  rebuild  Close all PRs in the stack and recreate them from existing branches"
+    echo "  help     Show this help message"
+}
+
 # Push your current changes to a new or existing stack
 if [ "$1" = "push" ]; then
 
@@ -181,5 +193,16 @@ elif [ "$1" = "rebuild" ]; then
         gh pr create --fill --head "$b" -B "$prev"
         prev="$b"
     done
+
+elif [ "$1" = "help" ]; then
+    print_help
+
+else
+    if [ -n "$1" ]; then
+        echo "Unknown command: $1"
+        echo ""
+    fi
+    print_help
+    exit 1
 
 fi

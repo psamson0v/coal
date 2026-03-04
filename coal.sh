@@ -84,7 +84,8 @@ if [ "$1" = "push" ]; then
     echo $base
     # If the branch is already part of a stack, increment the number and create a new branch
     if [ -n "$base" ]; then
-        if gh pr create --fill -B "$base"; then
+        stack_id=$(printf '%s' "$branch" | sed 's/.*-stack-\(.\{8\}\)-.*/\1/')
+        if gh pr create --fill --title "[${stack_id}] $(git log -1 --format=%s)" -B "$base"; then
             # TODO: put the stack number in the body of the PR somewhere
             num=$(printf '%s' "$branch" | sed 's/.*-stack-.\{8\}-//')
             prefix=$(printf '%s' "$branch" | sed 's/-[0-9]*$//')

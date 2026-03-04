@@ -93,9 +93,10 @@ if [ "$1" = "push" ]; then
         fi
     # If the branch is not part of a stack yet, create a new branch with a stack identifier
     else
-        if gh pr create --fill; then
+        rand=$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 8)
+        if gh pr create --fill --title "[${stack_id}] $(git log -1 --format=%s)" ; then
             # TODO: put the stack number in the body of the PR somewhere
-            rand=$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 8)
+            
             git checkout -b "${branch}-stack-${rand}-1"
         fi
     fi

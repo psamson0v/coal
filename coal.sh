@@ -191,10 +191,12 @@ elif [ "$1" = "rebuild" ]; then
         gh pr close "$b" 2>/dev/null
     done
 
-    gh pr create --fill --title "[${stack_id}] $(git log -1 --format=%s)" --head "$base"
+    declare -i i=1
+    gh pr create --fill --title "[${stack_id}-${i}] $(git log -1 --format=%s "$base")" --head "$base"
     prev="$base"
     for b in $rebuild_branches; do
-        gh pr create --fill --title "[${stack_id}] $(git log -1 --format=%s)" --head "$b" -B "$prev"
+        i+=1
+        gh pr create --fill --title "[${stack_id}-${i}] $(git log -1 --format=%s "$b")" --head "$b" -B "$prev"
         prev="$b"
     done
 

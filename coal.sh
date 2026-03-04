@@ -117,23 +117,25 @@ elif [ "$1" = "status" ]; then
             exit 1
             ;;
     esac
-
-    stack_branches=$(printf '%s\n' "$base"; git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
+    stack_branches=$(git branch --list "${base}*" | sed 's/^[* ]*//' | \
         awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
 
     {
         printf '%s\t%s\t%s\n' "BRANCH" "STATUS" "URL"
         for b in $stack_branches; do
-            #decision=$(gh pr view "$b" --json reviewDecision,mergeable,url --jq '[.reviewDecision // "NONE", .mergeable // "NONE", .url // "NONE"] | join("\t")' 2>/dev/null)
-            review=$(gh pr view "$b" --json reviewDecision --jq '[.reviewDecision // "NONE"]')
-            mergeable=$(gh pr view "$b" --json mergeable --jq '[.mergeable // "NONE"]' )
-            url=$(gh pr view "$b" --json url --jq '[.url // "NONE"]')
-            case "$review" in
-                APPROVED)          label="approved" ;;
-                CHANGES_REQUESTED) label="changes requested" ;;
-                REVIEW_REQUIRED)   label="waiting for approvals" ;;
-                *)                 label="no reviews yet" ;;
-            esac
+            review=$(gh pr view "$b" --json reviewDecision --jq '[.reviewDecision // "NONE"]'  2>/dev/null)
+            mergeable=$(gh pr view "$b" --json mergeable --jq '[.mergeable // "NONE"]'  2>/dev/null)
+            url=$(gh pr view "$b" --json url --jq '[.url // "NONE"]'  2>/dev/null)
+            if [ -z "$url" ] || [ "$url" = "NONE" ]; then
+                label="no open PR"
+            else
+                case "$review" in
+                    APPROVED)          label="approved" ;;
+                    CHANGES_REQUESTED) label="changes requested" ;;
+                    REVIEW_REQUIRED)   label="waiting for approvals" ;;
+                    *)                 label="no reviews yet" ;;
+                esac
+            fi
             if [ "$mergeable" = "CONFLICTING" ]; then
                 label="$label, merge conflict"
             fi

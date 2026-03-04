@@ -125,7 +125,7 @@ elif [ "$1" = "status" ]; then
         for b in $stack_branches; do
             review=$(gh pr view "$b" --json reviewDecision --jq '[.reviewDecision // "NONE"]'  2>/dev/null)
             mergeable=$(gh pr view "$b" --json mergeable --jq '[.mergeable // "NONE"]'  2>/dev/null)
-            url=$(gh pr view "$b" --json url --jq '[.url // "NONE"]'  2>/dev/null)
+            url=$(gh pr view "$b" --json url --jq '[.url // "NONE"]'  2>/dev/null | tr -d '"[]')
             if [ -z "$url" ] || [ "$url" = "NONE" ]; then
                 label="no open PR"
             else

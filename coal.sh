@@ -110,7 +110,7 @@ elif [ "$1" = "status" ]; then
 
     case "$branch" in
         *stack-????????-[0-9]*)
-            stack_id=$(printf '%s' "$branch" | sed 's/.*-stack-\(.\{8\}\)-.*/\1/')
+            base="${branch%?????????????????}"
             ;;
         *)
             echo "Current branch is not part of a stack."
@@ -118,16 +118,16 @@ elif [ "$1" = "status" ]; then
             ;;
     esac
 
-    stack_branches=$(git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
+    stack_branches=$(printf '%s\n' "$base"; git branch --list "*stack-${stack_id}-*" | sed 's/^[* ]*//' | \
         awk -F- '{print $NF, $0}' | sort -n | awk '{print $2}')
 
     {
         printf '%s\t%s\t%s\n' "BRANCH" "STATUS" "URL"
         for b in $stack_branches; do
-            decision=$(gh pr view "$b" --json reviewDecision,mergeable,url --jq '[.reviewDecision // "", .mergeable // "", .url // ""] | join("\t")' 2>/dev/null)
-            review=$(printf '%s' "$decision" | cut -f1)
-            mergeable=$(printf '%s' "$decision" | cut -f2)
-            url=$(printf '%s' "$decision" | cut -f3)
+            #decision=$(gh pr view "$b" --json reviewDecision,mergeable,url --jq '[.reviewDecision // "NONE", .mergeable // "NONE", .url // "NONE"] | join("\t")' 2>/dev/null)
+            review=$(gh pr view "$b" --json reviewDecision --jq '[.reviewDecision // "NONE"]')
+            mergeable=$(gh pr view "$b" --json mergeable --jq '[.mergeable // "NONE"]' )
+            url=$(gh pr view "$b" --json url --jq '[.url // "NONE"]')
             case "$review" in
                 APPROVED)          label="approved" ;;
                 CHANGES_REQUESTED) label="changes requested" ;;
